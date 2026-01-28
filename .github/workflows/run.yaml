@@ -1,0 +1,48 @@
+name: Model Training CICD
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install CML
+        uses: iterative/setup-cml@v1
+
+      - name: Train model
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+          python train_model.py
+
+          ls -la
+
+          echo "RF and LR Model Score" > report.md
+          cat scores.txt >> report.md
+
+          echo "Confusion Matrix & Feature Importance" > report1.md
+
+          if [ -f ConfusionMatrix.png ]; then
+            echo '|[](./ConfusionMatrix.png "ConfusionMatrix")' >> report1.md
+          fi
+
+          if [ -f FeatureImportance.png ]; then
+            echo '|[](./FeatureImportance.png "FeatureImportance")' >> report1.md
+          fi
+
+          cat report.md report1.md > combined_file.md
+
+          cml comment create combined_file.md
